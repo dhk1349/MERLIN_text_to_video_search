@@ -1,1 +1,3 @@
-# MERLIN_text_to_video_search
+# MERLIN
+
+Code will be released soon.

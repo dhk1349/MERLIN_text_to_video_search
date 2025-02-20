@@ -8,3 +8,11 @@ Official github repository of MERLIN : Multimodal Embedding Refinement via LLM-b
 <br>
 
 Code will be released soon.
+
+## Precomputed Embeddings
+
+We provide precomputed vertex embeddings for the following datasets:
+- [ActivityNet](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) (31.3 MB)
+- [MSRVTT-1k](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) (15.6 MB)
+- [MSVD](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) (14 MB)
+

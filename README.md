@@ -12,7 +12,9 @@ Code will be released soon.
 ## Precomputed Embeddings
 
 We provide precomputed vertex embeddings for the following datasets:
-- [ActivityNet](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) (31.3 MB)
-- [MSRVTT-1k](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) (15.6 MB)
-- [MSVD](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) (14 MB)
+- [ActivityNet](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) 
+- [MSRVTT-1k](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) 
+- [MSVD](https://drive.google.com/drive/folders/1xr49ADvTqIGbnbg6Xvd0PAh3gklwKvaI?usp=drive_link) 
 
+## MERLIN's log on ActivityNet, MSRVTT-1k, MSVD
+- [Link](https://drive.google.com/drive/folders/1E2zjiMVTtuEQA4Hs6RwsCbxVwUQ88W_F?usp=sharing)

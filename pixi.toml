@@ -1,0 +1,11 @@
+[project]
+authors = ["dhk1349 <dhk1349@snu.ac.kr>"]
+channels = ["conda-forge"]
+description = "Add a short description here"
+name = "MERLIN_text_to_video_search"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]

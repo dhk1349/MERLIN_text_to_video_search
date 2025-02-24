@@ -8,6 +8,8 @@ Official github repository of MERLIN : Multimodal Embedding Refinement via LLM-b
 <br>
 
 Code will be released soon.
+## Subsampled Testset
+- [Link](https://drive.google.com/drive/folders/19IPbbbV-ugZdqYCHHY5R-m4bCECy4-hd?usp=sharing)
 
 ## Precomputed Embeddings
 

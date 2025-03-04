@@ -7,7 +7,7 @@ Official github repository of MERLIN : Multimodal Embedding Refinement via LLM-b
 </div>
 <br>
 
-🔴 I updated the initial version of the code and tested with several cases of MSRVTT-1k. You will be able to followup how MERLIN works with current code.<br>
+🔴 I updated the initial version of the code and tested with several cases of MSRVTT-1k. You will be able to followup how MERLIN works with current code. (you can check some examples in the output folder just in case)<br>
 🔴 Soon I will clean up the codes and make test run them on other datasets too.<br>
 🔴 I will update the README.md with more details about the code.<br>
 🚧 Rest of the code will be updated ASAP🙏. 🚧

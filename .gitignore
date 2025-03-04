@@ -163,6 +163,7 @@ cython_debug/
 
 # Environment variables
 .env
+.env.local
 
 # Data folders
 data/*

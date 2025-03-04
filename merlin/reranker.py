@@ -1,11 +1,30 @@
+import torch
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from pathlib import Path
+from typing import Optional
+import vertexai
+from vertexai.vision_models import (
+    Image,
+    MultiModalEmbeddingModel,
+    MultiModalEmbeddingResponse,
+    Video,
+    VideoSegmentConfig,
+)
+from glob import glob
+import os
+
+
 class Reranker(torch.nn.Module):
-    def __init__(self, location: str, project_id: str, memory_path: str, queries: list):
+    def __init__(self, location: str, project_id: str, memory_path: str, queries: list, video_ext: str = ".mp4"):
         super(Reranker, self).__init__()
         self.location = location
         self.project_id = project_id
         self.memory_path = memory_path
         self.video_id = -1
         self.embedding_container = []
+        self.weights = [1.5]  # Initialize weights here
+        self.video_ext = video_ext  # Store the video extension
 
         # Load embeddings from JSON file
         # with open(self.memory_path, 'r') as f:
@@ -87,24 +106,23 @@ class Reranker(torch.nn.Module):
         # return np.average(self.embedding_container, axis=0, weights=weights)
         
         # ppl
-        if len(self.weights) == 0:
-            return np.average(self.embedding_container, axis=0)
+        # if len(self.weights) == 0:
+        #     return np.average(self.embedding_container, axis=0)
         
-        weights = torch.softmax(torch.tensor(self.weights), dim=-1)
-        weights = 1 / torch.tensor(self.weights)
-        weights = weights.tolist()
-        print(f"weights: {weights}")
-        return np.average(self.embedding_container, axis=0, weights=weights)
+        # weights = torch.softmax(torch.tensor(self.weights), dim=-1)
+        # weights = 1 / torch.tensor(self.weights)
+        # weights = weights.tolist()
+        # print(f"weights: {weights}")
+        # return np.average(self.embedding_container, axis=0, weights=weights)
 
         # SLERP
-        # if len(self.embedding_container) == 1:
-        #     return np.average(self.embedding_container, axis=0)
-        # alpha = 0.8
-        # interpolated_vector = self.embedding_container[0]
-        # for i in self.embedding_container[1:]:
-        #     interpolated_vector = self.slerp(interpolated_vector, i, alpha)
-        # return interpolated_vector
-        return
+        if len(self.embedding_container) == 1:
+            return np.average(self.embedding_container, axis=0)
+        alpha = 0.8
+        interpolated_vector = self.embedding_container[0]
+        for i in self.embedding_container[1:]:
+            interpolated_vector = self.slerp(interpolated_vector, i, alpha)
+        return interpolated_vector
     
     def get_embedding_slerp(self):
         if len(self.embedding_container) == 1:
@@ -112,10 +130,10 @@ class Reranker(torch.nn.Module):
         alpha = 0.8
         interpolated_vector = torch.tensor(self.embedding_container[0])
         
-        weights = torch.softmax(torch.tensor(self.weights), dim=-1)
-        weights = 1 / torch.tensor(self.weights)
+        # weights = torch.softmax(torch.tensor(self.weights), dim=-1)
+        # weights = 1 / torch.tensor(self.weights)
         
-        print(f"weights: {weights}")
+        # print(f"weights: {weights}")
         
         for i in self.embedding_container[1:]:
             # print(torch.shape, type(i))
@@ -171,16 +189,15 @@ class Reranker(torch.nn.Module):
         for k in k_values:
             top_k_indices = np.argsort(-similarities[0])
             for idx, k_index in enumerate(top_k_indices):
-                if self.memories[k_index]["video"].replace(".mp4", "")==target_vid:
+                if self.memories[k_index]["video"].replace(self.video_ext, "")==target_vid:
                     desired_video_rank = idx+1
                     break
 
             top_k_indices = top_k_indices[:k]
             for idx in top_k_indices:
-                top_k_ids.append(self.memories[idx]["video"].replace(".mp4", ""))
+                top_k_ids.append(self.memories[idx]["video"].replace(self.video_ext, ""))
                 # top_k_ids.append(self.memories[idx]['id'])
-        # desired_video_rank = np.where(np.argsort(-similarities[0]) == [m['id'] for m in self.memories].index(int(target_vid)))[0][0] + 1
-        
+        # desired_video_rank = np.where(np.argsort(-similarities[0]) == [m['id'] for m in self.memories].index(int(target_vid)))[0][0] + 1      
         # desired_video_rank = np.where(np.argsort(-similarities[0]) == [m['video'].replace(".avi", "") for m in self.memories].index(int(target_vid)))[0][0] + 1
         # desired_video_rank = np.where(np.argsort(-similarities[0]) == self.memories.index(self.video_id))[0][0] + 1
         return top_k_ids, desired_video_rank

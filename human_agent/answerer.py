@@ -1,3 +1,18 @@
+import torch
+import numpy as np
+import aiohttp
+import asyncio
+import base64
+import io
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)
+from openai import OpenAI
+
+from utils.video_utils import video_frame_generator
+
 class Answerer(torch.nn.Module):
     def __init__(self, api_key):
         super(Answerer, self).__init__()
@@ -10,10 +25,7 @@ class Answerer(torch.nn.Module):
         # Load VQA model-> BLIP2 + ChatGPT3.5
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # self.vqa_processor = Blip2Processor.from_pretrained("Salesforce/blip2-flan-t5-xl")
         self.vqa_model = "gpt-4o"
-        # self.vqa_model = Blip2ForConditionalGeneration.from_pretrained("Salesforce/blip2-flan-t5-xl")
-        # self.vqa_model.to(self.device)
         self.vqa_sys_prompt = {
         "role": "system",
         "content": """
@@ -38,6 +50,7 @@ For example, if the question is "Did a cookie appear in the video?" and the indi
         } 
         
         self.model = "gpt-4o" # "gpt-4-1106-preview" "gpt-3.5-turbo-16k"
+        self.client = OpenAI(api_key=self.api_key)
         self.images = []
         self.topk = []
 
@@ -62,7 +75,7 @@ For example, if the question is "Did a cookie appear in the video?" and the indi
 
         answers = []
         for img in self.images:
-            response = client.chat.completions.create(
+            response = self.client.chat.completions.create(
             model=self.vqa_model,
             messages=[
                 self.vqa_sys_prompt,
@@ -125,7 +138,8 @@ For example, if the question is "Did a cookie appear in the video?" and the indi
                 ans = "no answer available"
                 answers = ["no answer available", "no answer available", "no answer available"]
                 perplexity = 9
-        return ans, answers, perplexity
+        # we did not used perplexity in the experiment
+        return ans, answers #, perplexity 
     
     def aggregate(self, question, answers):
         aggregation_prompt = {"role": "user", "content": f""" 
@@ -135,7 +149,7 @@ For example, if the question is "Did a cookie appear in the video?" and the indi
             """}
         messages = [self.system_prompt, aggregation_prompt]
         
-        completion = client.chat.completions.create(
+        completion = self.client.chat.completions.create(
             model=self.model, messages=messages, max_tokens=100, stream=False, temperature=0.5,
             logprobs=True
         )

@@ -33,13 +33,10 @@ class ProjectStructure:
         return cls(
             data={
                 "ActivityNet": dataset_structure.copy(),
-                "MSRVTT-1k": dataset_structure.copy(),
-                "MSVD": dataset_structure.copy()
+                "msrvtt": dataset_structure.copy(),
+                "msvd": dataset_structure.copy()
             },
             outputs={
-                "embeddings": {},
-                "logs": {},
-                "results": {}
             },
             configs={}
         )
@@ -102,11 +99,11 @@ def create_directory_structure(
         create_recursive(structure.configs, base_path / "configs")
         
         # Create necessary files
-        config_path = base_path / "configs" / "default_config.yaml"
-        if not config_path.exists():
-            config_path.touch()
-            if debug:
-                logger.debug(f"Created config file: {config_path}")
+        # config_path = base_path / "configs" / "default_config.yaml"
+        # if not config_path.exists():
+        #     config_path.touch()
+        #     if debug:
+        #         logger.debug(f"Created config file: {config_path}")
         
         logger.info("Successfully created directory structure")
         

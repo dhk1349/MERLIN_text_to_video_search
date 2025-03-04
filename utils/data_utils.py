@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any, Union, NamedTuple
 from dataclasses import dataclass
 
+from typing import Optional
+
 # Add the project root to Python path when running as script
 if __name__ == "__main__":
     project_root = str(Path(__file__).parent.parent)
@@ -19,7 +21,7 @@ class DatasetConfig(NamedTuple):
     name: str
     test_file: str
     video_ext: str
-    video_subdir: str
+    video_subdirs: List[str]
     additional_files: Dict[str, str]
     sample_limit: Optional[int] = None
 
@@ -29,7 +31,7 @@ DATASET_CONFIGS = {
         name="msvd",
         test_file="msvd_ret_test.json",
         video_ext=".avi",
-        video_subdir="YouTubeClips",
+        video_subdirs=["YouTubeClips"],
         additional_files={},
         sample_limit=None
     ),
@@ -37,7 +39,7 @@ DATASET_CONFIGS = {
         name="msrvtt",
         test_file="test_videodatainfo.json",
         video_ext=".mp4",
-        video_subdir="videos",
+        video_subdirs=["videos/TestVideo", "videos/TrainValVideo"],
         additional_files={
             "train_val": "train_val_videodatainfo.json",
             "msrvtt_1ka": "msrvtt_1ka"
@@ -48,7 +50,7 @@ DATASET_CONFIGS = {
         name="anet",
         test_file="descs_ret_test.json",
         video_ext=".mp4",
-        video_subdir="videos",
+        video_subdirs=["videos"],
         additional_files={},
         sample_limit=None
     )
@@ -57,35 +59,58 @@ DATASET_CONFIGS = {
 @dataclass
 class DatasetPaths:
     """Holds paths for dataset files and directories."""
-    video_path: Path
+    base_path: Path
+    video_paths: List[Path]  # List of video paths
     gpt4v_caption_path: Path
     video_embeddings_path: Path
     text_embeddings_path: Path
+    config: DatasetConfig
     
     @classmethod
     def from_base_path(cls, base_path: Union[str, Path], config: DatasetConfig) -> 'DatasetPaths':
         """Create DatasetPaths from a base directory path."""
         base = Path(base_path)
+        # Create a list of video paths from the video_subdirs list
+        video_paths = [base / subdir for subdir in config.video_subdirs]
+        
         return cls(
-            video_path=base / config.video_subdir,
+            base_path=base,
+            video_paths=video_paths,
             gpt4v_caption_path=base / "gpt4v_captions",
             video_embeddings_path=base / "video_embeddings",
-            text_embeddings_path=base / "text_embeddings"
+            text_embeddings_path=base / "text_embeddings",
+            config=config
         )
 
-    def get_video_path(self, video_id: str, config: DatasetConfig) -> Path:
-        """Get the full path to a video file."""
-        return self.video_path / f"{video_id}{config.video_ext}"
+    def get_video_paths(self) -> List[Path]:
+        """Get all video paths."""
+        return self.video_paths
+        
+    def find_video_path(self, video_id: str) -> Optional[Path]:
+        """
+        Find the path to a video file by checking all video subdirectories.
+        
+        Args:
+            video_id: The ID of the video
+            
+        Returns:
+            Path to the video file if found, None otherwise
+        """
+        for video_path in self.video_paths:
+            full_path = video_path / f"{video_id}{self.config.video_ext}"
+            if full_path.exists():
+                return full_path
+        return None
 
-    def get_test_file_path(self, config: DatasetConfig) -> Path:
+    def get_test_file_path(self) -> Path:
         """Get the path to the test file."""
-        return self.video_path.parent / config.test_file
+        return self.base_path / self.config.test_file
 
-    def get_additional_file_path(self, file_key: str, config: DatasetConfig) -> Path:
+    def get_additional_file_path(self, file_key: str) -> Path:
         """Get the path to an additional dataset file."""
-        if file_key not in config.additional_files:
+        if file_key not in self.config.additional_files:
             raise ValueError(f"Unknown additional file key: {file_key}")
-        return self.video_path.parent / config.additional_files[file_key]
+        return self.base_path / self.config.additional_files[file_key]
 
 def load_video_captions(caption_path: Path) -> Dict[str, Any]:
     """
@@ -130,7 +155,7 @@ def prepare_msvd_data(paths: DatasetPaths, config: DatasetConfig) -> Tuple[List[
     """Handle MSVD dataset loading."""
     # Load queries
     logger.info("Loading MSVD dataset...")
-    with open(paths.get_test_file_path(config), 'r') as f:
+    with open(paths.get_test_file_path(), 'r') as f:
         queries = json.load(f)
 
     # Load video captions
@@ -161,19 +186,19 @@ def prepare_msrvtt_data(paths: DatasetPaths, config: DatasetConfig) -> Tuple[Lis
     sampled_queries = {}
     
     # Load train/val data
-    with open(paths.get_additional_file_path("train_val", config), 'r') as f:
+    with open(paths.get_additional_file_path("train_val"), 'r') as f:
         train_val_files = json.load(f)['sentences']
     for sample in train_val_files:
         sampled_queries[sample["video_id"]] = sample["caption"]
 
     # Load test data
-    with open(paths.get_test_file_path(config), 'r') as f:
+    with open(paths.get_test_file_path(), 'r') as f:
         test_files = json.load(f)['sentences']
     for sample in test_files:
         sampled_queries[sample["video_id"]] = sample["caption"]
 
     # Load MSRVTT1KA IDs
-    with open(paths.get_additional_file_path("msrvtt_1ka", config), 'r') as f:
+    with open(paths.get_additional_file_path("msrvtt_1ka"), 'r') as f:
         msrvtt1ka_ids = [line.strip() for line in f]
 
     # Create queries list with sample limit
@@ -201,7 +226,7 @@ def prepare_msrvtt_data(paths: DatasetPaths, config: DatasetConfig) -> Tuple[Lis
 def prepare_anet_data(paths: DatasetPaths, config: DatasetConfig) -> Tuple[List[Dict], Dict, List[np.ndarray], List[np.ndarray]]:
     """Handle ActivityNet dataset loading."""
     # Load queries
-    with open(paths.get_test_file_path(config), 'r') as f:
+    with open(paths.get_test_file_path(), 'r') as f:
         test_files = json.load(f)
 
     sampled_queries = {
@@ -209,24 +234,21 @@ def prepare_anet_data(paths: DatasetPaths, config: DatasetConfig) -> Tuple[List[
         for sample in test_files
         if "video_id" in sample and "desc" in sample
     }
+    
+    # Create queries list
+    queries = [
+        {"video": id, "caption": desc} 
+        for id, desc in sampled_queries.items()
+    ]
+    
+    # Apply sample limit if specified
+    if config.sample_limit:
+        queries = queries[:config.sample_limit]
 
     # Load video captions
     logger.info("Loading video meta data...")
-    video_captions = {}
-    queries = []
+    video_captions = load_video_captions(paths.gpt4v_caption_path)
     
-    for vc in glob(str(paths.gpt4v_caption_path / "*")):
-        with open(vc, 'r') as f:
-            caption = json.load(f)
-        video_id = Path(vc).stem.replace(".npy", "")
-        
-        if video_id in sampled_queries:
-            queries.append({
-                "video": video_id,
-                "caption": sampled_queries[video_id]
-            })
-            video_captions[video_id] = caption
-
     # Load embeddings
     logger.info("Loading embeddings...")
     video_embs = []
@@ -234,9 +256,6 @@ def prepare_anet_data(paths: DatasetPaths, config: DatasetConfig) -> Tuple[List[
     
     for q in queries:
         video_id = q['video']
-        if video_id not in video_captions:
-            continue
-            
         video_emb, text_emb = load_embeddings(video_id, paths)
         video_embs.append(video_emb)
         text_embs.append(text_emb)
